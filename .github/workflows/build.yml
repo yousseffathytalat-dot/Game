@@ -1,0 +1,37 @@
+name: Build APK from ZIP
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack project ZIP
+        run: |
+          ZIP=$(ls -1 ./*.zip 2>/dev/null | sort -V | tail -n1)
+          if [ -z "$ZIP" ]; then echo "No .zip file found in the repo root"; exit 1; fi
+          echo "Using $ZIP"
+          rm -rf _src && mkdir _src
+          unzip -q "$ZIP" -d _src
+          S=$(find _src -maxdepth 2 -name settings.gradle.kts | head -n1)
+          if [ -z "$S" ]; then echo "settings.gradle.kts not found inside the zip"; exit 1; fi
+          ROOT=$(dirname "$S")
+          rm -rf "$ROOT/.github"
+          cp -a "$ROOT"/. ./
+          rm -rf _src
+          ls -la
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GamesHub-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
