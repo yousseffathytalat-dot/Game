@@ -25,7 +25,11 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        run: |
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SM=$(ls "$SDK"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -n1) || true
+          if [ -n "$SM" ]; then yes | "$SM" --licenses > /dev/null || true; fi
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
